@@ -1,5 +1,6 @@
 package com.example.real_time_messaging_system.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,7 @@ public class Message {
 
     @ManyToOne(optional = false,fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id")
+    @JsonIgnore
     private User sender;
 
     @JoinColumn(nullable = false)
@@ -31,6 +33,7 @@ public class Message {
 
     @ManyToOne(optional = false,fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id")
+    @JsonIgnore
     private Chat chat;
 
     private LocalDateTime createdAt;

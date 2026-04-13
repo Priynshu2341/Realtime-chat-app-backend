@@ -1,5 +1,6 @@
 package com.example.real_time_messaging_system.service;
 
+import com.example.real_time_messaging_system.dto.ChatResponse;
 import com.example.real_time_messaging_system.dto.MessageRequest;
 import com.example.real_time_messaging_system.entity.Chat;
 import com.example.real_time_messaging_system.entity.Message;
@@ -23,6 +24,9 @@ public class ChatService {
 
 
     private final ChatRepository chatRepository;
+    private final UserRepository userRepository;
+    private final MessageRepository messageRepository;
+    private final ChatMapper chatMapper;
 
     private String generateChatKey(Long id1, Long id2){
         return id1 < id2 ? id1 + "-" + id2 : id2 + "-" + id1;
@@ -45,9 +49,29 @@ public class ChatService {
             receiver.getChats().add(chat);
             return chatRepository.save(chat);
         }
-
-
         );
     }
+
+
+    public List<ChatResponse> findAllChats(Authentication authentication){
+        var name = authentication.getName();
+        var currentUser = userRepository.findByEmail(name).orElseThrow(()-> new EntityNotFoundException("User not found"));
+        var chats = chatRepository.findByUsers(currentUser);
+        return chats.stream().map(chat -> {
+            var lastMessage = messageRepository
+                    .findTopByChatIdOrderByCreatedAtDesc(chat.getId())
+                    .map(Message::getContent)
+                    .orElse("");
+
+            return chatMapper.toChatResponse(chat,currentUser,lastMessage);
+        }
+
+
+        ).toList();
+
+
+    }
+
+
 
 }

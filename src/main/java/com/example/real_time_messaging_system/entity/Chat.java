@@ -1,5 +1,6 @@
 package com.example.real_time_messaging_system.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class Chat {
     private List<User> users;
 
     @OneToMany(mappedBy = "chat",cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Message> messages;
 
     @Column(unique = true,nullable = false)
