@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: real-time-messaging-system
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydb
+    username: admin
+    password: admin123
+    driver-class-name: org.postgresql.Driver
+
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8080
