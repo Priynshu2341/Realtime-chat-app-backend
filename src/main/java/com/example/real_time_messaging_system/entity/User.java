@@ -8,8 +8,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.List;
 
-@Entity(name = "users")
+
+@Entity
+@Table(name = "users")
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,6 +30,21 @@ public class User {
     private String email;
     @JsonIgnore
     private String password;
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+            name = "chat_users",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "chat_id")
+    )
+    private List<Chat> chats;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "sender",fetch = FetchType.LAZY)
+    private List<Message> sentMessages;
+
+    private LocalDateTime createdAt;
 
 
 }

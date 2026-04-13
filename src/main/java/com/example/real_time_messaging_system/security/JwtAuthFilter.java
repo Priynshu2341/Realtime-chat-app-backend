@@ -38,7 +38,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
                 if (!jwtUtility.isTokenExpired(token)) {
-                    UsernamePasswordAuthenticationToken auth =  new UsernamePasswordAuthenticationToken(userDetails, null);
+                    UsernamePasswordAuthenticationToken auth =  new UsernamePasswordAuthenticationToken(userDetails, null,userDetails.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             }
