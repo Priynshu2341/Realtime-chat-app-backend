@@ -4,6 +4,7 @@ package com.example.real_time_messaging_system.controller;
 import com.example.real_time_messaging_system.dto.LoginRequest;
 import com.example.real_time_messaging_system.dto.LoginResponse;
 import com.example.real_time_messaging_system.dto.RegisterRequest;
+import com.example.real_time_messaging_system.repository.UserRepository;
 import com.example.real_time_messaging_system.security.CustomUserDetailsService;
 import com.example.real_time_messaging_system.security.JwtUtility;
 import com.example.real_time_messaging_system.service.UserService;
@@ -25,6 +26,7 @@ public class AuthController {
     private final UserService userService;
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtility jwtUtility;
+    private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
 
 
@@ -36,11 +38,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
          authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password()));
-         var user = userDetailsService.loadUserByUsername(loginRequest.email());
+          var user = userDetailsService.loadUserByUsername(loginRequest.email());
+          var userId = userRepository.findByEmail(loginRequest.email()).get().getUserId();
 
             var accessToken = jwtUtility.createAccessToken(user);
             var refreshToken = jwtUtility.createRefreshToken(user);
-            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken));
+            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken,userId));
 
     }
 }

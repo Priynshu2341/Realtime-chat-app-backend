@@ -27,7 +27,6 @@ public class MessageService {
     private final UserRepository userRepository;
     private final ChatService chatService;
     private final ChatRepository chatRepository;
-    private final SimpMessagingTemplate messagingTemplate;
     private final MessageMapper messageMapper;
 
      public MessageResponse saveMessages(@Valid MessageRequest messageRequest, Authentication authentication){
@@ -47,7 +46,7 @@ public class MessageService {
 
         messageRepository.save(message);
 
-         MessageResponse messageResponse = new MessageResponse(
+         return new MessageResponse(
                  message.getId(),
                  message.getContent(),
                  sender.getEmail(),
@@ -55,14 +54,12 @@ public class MessageService {
                  message.getCreatedAt()
          );
 
-         messagingTemplate.convertAndSend("/topic/chat/"+ chat.getId() ,messageResponse);
-         System.out.println("sending message: /topic/chat/"+ chat.getId());
-
-
-        return messageResponse;
 
 
     }
+
+
+
     public List<BasicMessageResponse> findAllMessagesInChat(String chatKey){
          var chat = chatRepository.findByChatKey(chatKey).orElseThrow(()-> new EntityNotFoundException("Invalid Chat Key"));
          return messageRepository.findByChatId(chat.getId())
@@ -70,5 +67,30 @@ public class MessageService {
 
 
     }
+
+
+
+    public MessageResponse saveMessageFromSocket(String email, MessageRequest messageRequest){
+         var sender = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid Sender Id"));
+         var receiver = userRepository.findById(messageRequest.receiverId()).orElseThrow(()-> new EntityNotFoundException("Invalid Receiver Id"));
+         var chat = chatService.findOrCreateChat(sender,receiver);
+
+         var message = Message.builder()
+                 .content(messageRequest.content())
+                 .sender(sender)
+                 .chat(chat)
+                 .createdAt(LocalDateTime.now())
+                 .build();
+
+         return new MessageResponse(
+                 message.getId(),
+                 message.getContent(),
+                 sender.getEmail(),
+                 chat.getId(),
+                 message.getCreatedAt()
+         );
+    }
+
+
 
 }
