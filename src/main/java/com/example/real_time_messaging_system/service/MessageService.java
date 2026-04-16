@@ -1,9 +1,6 @@
 package com.example.real_time_messaging_system.service;
 
-import com.example.real_time_messaging_system.dto.BasicMessageResponse;
-import com.example.real_time_messaging_system.dto.MessageRequest;
-import com.example.real_time_messaging_system.dto.MessageResponse;
-import com.example.real_time_messaging_system.dto.PaginatedResponse;
+import com.example.real_time_messaging_system.dto.*;
 import com.example.real_time_messaging_system.entity.Chat;
 import com.example.real_time_messaging_system.entity.Message;
 import com.example.real_time_messaging_system.repository.ChatRepository;
@@ -15,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -68,7 +66,7 @@ public class MessageService {
 
 
 
-    public PaginatedResponse<BasicMessageResponse> findAllMessagesInChat(String email,String chatKey,LocalDateTime cursor) throws AccessDeniedException {
+    public PaginatedResponse<BasicMessageResponse> findAllMessagesInChat(String email, String chatKey, MessageCursor cursor) throws AccessDeniedException {
          var chat = chatRepository.findByChatKey(chatKey).orElseThrow(()-> new EntityNotFoundException("Invalid Chat Key"));
          var user = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid User Id"));
          if (!chat.getUsers().contains(user)){
@@ -78,14 +76,22 @@ public class MessageService {
          List<Message> messages;
 
          if (cursor == null){
-             messages = messageRepository.findTop10ByChatIdOrderByCreatedAtDesc(chat.getId());
+             messages = messageRepository.findTop10ByChatIdOrderByCreatedAtDescIdDesc(chat.getId());
          }else {
-             messages = messageRepository.findTop10ByChatIdAndCreatedAtLessThanEqualOrderByCreatedAtDescIdDesc(chat.getId(),cursor);
+             messages = messageRepository.findNextMessage(
+                     chat.getId(),
+                     cursor.createdAt(),
+                     cursor.id(),
+                     PageRequest.of(0,10));
          }
          var content = new java.util.ArrayList<>(messages.stream().map(messageMapper::toMessageResponse).toList());
          Collections.reverse(content);
          boolean hasMore = messages.size() == 10;
-         LocalDateTime nextCursor = messages.isEmpty()?null:messages.get(messages.size()-1).getCreatedAt();
+         MessageCursor nextCursor = messages.isEmpty() ? null : new MessageCursor(
+                 messages.get(messages.size() - 1).getCreatedAt(),
+                 messages.get(messages.size() -1).getId()
+
+         );
 
          return new PaginatedResponse<BasicMessageResponse>(content,hasMore,nextCursor);
 

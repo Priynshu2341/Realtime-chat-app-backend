@@ -1,6 +1,7 @@
 package com.example.real_time_messaging_system.controller;
 
 import com.example.real_time_messaging_system.dto.BasicMessageResponse;
+import com.example.real_time_messaging_system.dto.MessageCursor;
 import com.example.real_time_messaging_system.dto.MessageRequest;
 import com.example.real_time_messaging_system.dto.MessageResponse;
 import com.example.real_time_messaging_system.entity.Chat;
@@ -39,12 +40,19 @@ public class MessageController {
     public ResponseEntity<?> findMessagePaginated(
             @PathVariable String chatKey,
             Authentication authentication,
-            @RequestParam(required = false) String cursor
+            @RequestParam(required = false) String cursorTime,
+            @RequestParam(required = false) Long cursorId
     ) throws AccessDeniedException {
 
         String email = authentication.getName();
-        LocalDateTime parsedCursor = (cursor==null) ? null : LocalDateTime.parse(cursor);
-        return ResponseEntity.ok(messageService.findAllMessagesInChat(email,chatKey,parsedCursor));
+        MessageCursor cursor = null;
+        if (cursorTime != null && cursorId != null ) {
+            cursor = new MessageCursor(
+                    LocalDateTime.parse(cursorTime),
+                    cursorId
+            );
+        }
+        return ResponseEntity.ok(messageService.findAllMessagesInChat(email,chatKey,cursor));
     }
 
 

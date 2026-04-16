@@ -6,7 +6,7 @@ import java.util.List;
 public record PaginatedResponse<T>(
         List<T> content,
         Boolean hasMore,
-        LocalDateTime nextCursor
+        MessageCursor nextCursor
 ) {
 
 }
