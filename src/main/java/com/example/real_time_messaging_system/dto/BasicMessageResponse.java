@@ -9,5 +9,6 @@ public record BasicMessageResponse(
         String content,
         Long senderId,
         LocalDateTime createdAt
+
 ) {
 }

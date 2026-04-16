@@ -2,10 +2,7 @@ package com.example.real_time_messaging_system.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,7 +11,8 @@ import java.util.List;
 @Builder
 @Table
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 public class Chat {
 
