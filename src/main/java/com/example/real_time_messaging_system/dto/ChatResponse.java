@@ -7,6 +7,7 @@ public record ChatResponse(
         Long otherUserId,
         String otherUserName,
         String lastMessage,
-        String chatKey
+        String chatKey,
+        long unRead
 ) {
 }

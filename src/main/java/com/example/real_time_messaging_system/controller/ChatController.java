@@ -6,9 +6,7 @@ import com.example.real_time_messaging_system.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
@@ -21,4 +19,11 @@ public class ChatController {
     public ResponseEntity<?> getAllChats(Authentication authentication) {
         return ResponseEntity.ok(chatService.findAllChats(authentication));
     }
+
+    @PostMapping("/read/{chatId}")
+    public ResponseEntity<?> readChat(Authentication authentication, @PathVariable("chatId") Long chatId) {
+        chatService.markAsRead(authentication.getName(),chatId);
+        return ResponseEntity.ok().build();
+    }
+
 }

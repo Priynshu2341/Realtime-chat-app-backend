@@ -9,5 +9,6 @@ public record MessageResponse(
         String email,
         Long chatId,
         LocalDateTime createdAt
+
 ) {
 }

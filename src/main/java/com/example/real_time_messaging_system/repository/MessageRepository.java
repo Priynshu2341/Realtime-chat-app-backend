@@ -17,7 +17,7 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
 
 
    Optional<Message> findTopByChatIdOrderByCreatedAtDesc(Long chatId);
-   List<Message> findTop10ByChatIdOrderByCreatedAtDescIdDesc(Long chatId);
+   List<Message> findTop20ByChatIdOrderByCreatedAtDescIdDesc(Long chatId);
 
    @Query("""
          SELECT m from Message m
@@ -33,4 +33,16 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
            @Param("createdAt") LocalDateTime createdAt,
            @Param("id") Long id,
            Pageable pageable);
+
+   @Query("""
+          SELECT COUNT(m)
+          FROM Message m
+          WHERE m.chat.id = :chatId
+          AND m.createdAt > :lastReadAt
+          AND m.sender.userId != :userId
+        """)
+   long countUnreadMessages(
+           @Param("lastReadAt") LocalDateTime lastReadAt,
+           @Param("chatId") Long chatId,
+           @Param("userId") Long userId);
 }

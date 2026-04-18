@@ -30,13 +30,8 @@ public class User {
     private String password;
 
     @JsonIgnore
-    @ManyToMany
-    @JoinTable(
-            name = "chat_users",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "chat_id")
-    )
-    private List<Chat> chats;
+    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL)
+    private List<ChatUser> chats;
 
     @JsonIgnore
     @OneToMany(mappedBy = "sender",fetch = FetchType.LAZY)

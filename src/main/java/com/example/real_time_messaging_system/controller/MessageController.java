@@ -6,7 +6,10 @@ import com.example.real_time_messaging_system.dto.MessageRequest;
 import com.example.real_time_messaging_system.dto.MessageResponse;
 import com.example.real_time_messaging_system.entity.Chat;
 import com.example.real_time_messaging_system.entity.Message;
+import com.example.real_time_messaging_system.entity.User;
+import com.example.real_time_messaging_system.repository.UserRepository;
 import com.example.real_time_messaging_system.service.MessageService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +32,7 @@ public class MessageController {
 
     private final MessageService messageService;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final UserRepository userRepository;
 
     @PostMapping("/send")
     public MessageResponse sendMessage(Authentication authentication, @RequestBody MessageRequest messageRequest){
@@ -65,8 +69,12 @@ public class MessageController {
             return;
         }
         String email = principal.getName();
+        Long receiverId = messageRequest.receiverId();
+        User receiver = userRepository.findById(receiverId).orElseThrow(()->new EntityNotFoundException("Receiver not found"));
         MessageResponse messageResponse = messageService.saveMessageFromSocket(email,messageRequest);
         simpMessagingTemplate.convertAndSend("/topic/chat/" + messageResponse.chatId(),messageResponse);
+        simpMessagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/chats", messageResponse);
+        simpMessagingTemplate.convertAndSendToUser(email, "/queue/chats", messageResponse);
     }
 
 

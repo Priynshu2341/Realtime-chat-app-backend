@@ -20,8 +20,8 @@ public class Chat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToMany(mappedBy = "chats")
-    private List<User> users;
+    @OneToMany(mappedBy = "chat")
+    private List<ChatUser> users;
 
     @OneToMany(mappedBy = "chat",cascade = CascadeType.ALL)
     @JsonIgnore
@@ -29,6 +29,10 @@ public class Chat {
 
     @Column(unique = true,nullable = false)
     private String chatKey;
+
+    private LocalDateTime lastMessageAt;
+
+    private String lastMessage;
 
     private LocalDateTime createdAt;
 }

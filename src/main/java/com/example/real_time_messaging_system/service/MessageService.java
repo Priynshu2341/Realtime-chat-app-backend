@@ -2,8 +2,10 @@ package com.example.real_time_messaging_system.service;
 
 import com.example.real_time_messaging_system.dto.*;
 import com.example.real_time_messaging_system.entity.Chat;
+import com.example.real_time_messaging_system.entity.ChatUser;
 import com.example.real_time_messaging_system.entity.Message;
 import com.example.real_time_messaging_system.repository.ChatRepository;
+import com.example.real_time_messaging_system.repository.ChatUserRepository;
 import com.example.real_time_messaging_system.repository.MessageRepository;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -32,6 +34,7 @@ public class MessageService {
     private final ChatService chatService;
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
+    private final ChatUserRepository  chatUserRepository;
 
      public MessageResponse saveMessages(@Valid MessageRequest messageRequest, Authentication authentication){
         String email = authentication.getName();
@@ -49,6 +52,9 @@ public class MessageService {
                 .build();
 
         messageRepository.save(message);
+        chat.setLastMessage(message.getContent());
+        chat.setLastMessageAt(message.getCreatedAt());
+        chatRepository.save(chat);
 
          return new MessageResponse(
                  message.getId(),
@@ -69,31 +75,32 @@ public class MessageService {
     public PaginatedResponse<BasicMessageResponse> findAllMessagesInChat(String email, String chatKey, MessageCursor cursor) throws AccessDeniedException {
          var chat = chatRepository.findByChatKey(chatKey).orElseThrow(()-> new EntityNotFoundException("Invalid Chat Key"));
          var user = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid User Id"));
-         if (!chat.getUsers().contains(user)){
-             throw new AccessDeniedException("You are not allowed to view this chat");
+         var chatUser = chat.getUsers();
+         boolean isParticipant = chatUser.stream().anyMatch(u -> u.getUser().getUserId().equals(user.getUserId()));
+         if (!isParticipant) {
+             throw new AccessDeniedException("Access Denied");
          }
-
          List<Message> messages;
 
          if (cursor == null){
-             messages = messageRepository.findTop10ByChatIdOrderByCreatedAtDescIdDesc(chat.getId());
+             messages = messageRepository.findTop20ByChatIdOrderByCreatedAtDescIdDesc(chat.getId());
          }else {
              messages = messageRepository.findNextMessage(
                      chat.getId(),
                      cursor.createdAt(),
                      cursor.id(),
-                     PageRequest.of(0,10));
+                     PageRequest.of(0,20));
          }
          var content = new java.util.ArrayList<>(messages.stream().map(messageMapper::toMessageResponse).toList());
          Collections.reverse(content);
-         boolean hasMore = messages.size() == 10;
+         boolean hasMore = messages.size() == 20;
          MessageCursor nextCursor = messages.isEmpty() ? null : new MessageCursor(
                  messages.get(messages.size() - 1).getCreatedAt(),
                  messages.get(messages.size() -1).getId()
 
          );
 
-         return new PaginatedResponse<BasicMessageResponse>(content,hasMore,nextCursor);
+         return new PaginatedResponse<BasicMessageResponse>(content,hasMore,nextCursor,messages.size());
 
 
     }
@@ -113,6 +120,10 @@ public class MessageService {
                  .build();
 
          messageRepository.save(message);
+         chat.setLastMessage(message.getContent());
+         chat.setLastMessageAt(message.getCreatedAt());
+         chatRepository.save(chat);
+
 
          return new MessageResponse(
                  message.getId(),

@@ -6,7 +6,8 @@ import java.util.List;
 public record PaginatedResponse<T>(
         List<T> content,
         Boolean hasMore,
-        MessageCursor nextCursor
+        MessageCursor nextCursor,
+        int elementsInPage
 ) {
 
 }
