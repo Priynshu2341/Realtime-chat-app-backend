@@ -16,7 +16,8 @@ public class MessageMapper {
                 message.getId(),
                 message.getContent(),
                 message.getSender().getUserId(),
-                message.getCreatedAt()
+                message.getCreatedAt(),
+                message.getMessageStatus()
         );
     }
 }

@@ -4,13 +4,16 @@ import com.example.real_time_messaging_system.dto.*;
 import com.example.real_time_messaging_system.entity.Chat;
 import com.example.real_time_messaging_system.entity.ChatUser;
 import com.example.real_time_messaging_system.entity.Message;
+import com.example.real_time_messaging_system.entity.MessageStatus;
 import com.example.real_time_messaging_system.repository.ChatRepository;
 import com.example.real_time_messaging_system.repository.ChatUserRepository;
 import com.example.real_time_messaging_system.repository.MessageRepository;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +26,10 @@ import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -35,6 +41,7 @@ public class MessageService {
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
     private final ChatUserRepository  chatUserRepository;
+    private final  SimpMessagingTemplate simpMessagingTemplate;
 
      public MessageResponse saveMessages(@Valid MessageRequest messageRequest, Authentication authentication){
         String email = authentication.getName();
@@ -48,6 +55,7 @@ public class MessageService {
                 .content(messageRequest.content())
                 .sender(sender)
                 .chat(chat)
+                .messageStatus(MessageStatus.SENT)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -116,6 +124,7 @@ public class MessageService {
                  .content(messageRequest.content())
                  .sender(sender)
                  .chat(chat)
+                 .messageStatus(MessageStatus.SENT)
                  .createdAt(LocalDateTime.now())
                  .build();
 
@@ -132,7 +141,31 @@ public class MessageService {
                  sender.getEmail(),
                  chat.getId(),
                  message.getCreatedAt()
+
          );
+    }
+
+    public void markMessageAsDelivered(Long messageId){
+         var message = messageRepository.findById(messageId).orElseThrow(()-> new EntityNotFoundException("Message not found"));
+         if (message.getMessageStatus() == MessageStatus.SENT){
+             message.setMessageStatus(MessageStatus.DELIVERED);
+             messageRepository.save(message);
+         }
+
+    }
+    @Transactional
+    public void handleUserCameOnline(String email){
+        var receiver =  userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid User Id"));
+        Set<Long> userIds = messageRepository.findAllUserIdForSentMessages(receiver.getUserId());
+        log.info("user connected: {}", userIds);
+        if (userIds.isEmpty()) return;
+        var messagesIds = messageRepository.findAllSentMessageIdForUser(receiver.getUserId());
+        log.info("user connected: {}", messagesIds);
+        messageRepository.markAllSentToDelivered(receiver.getUserId());
+        for (Long userId : userIds) {
+            var currentUser = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found"));
+            simpMessagingTemplate.convertAndSendToUser(currentUser.getEmail(), "/queue/refresh", messagesIds);
+        }
     }
 
 

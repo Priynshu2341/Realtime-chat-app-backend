@@ -1,14 +1,12 @@
 package com.example.real_time_messaging_system.controller;
 
-import com.example.real_time_messaging_system.dto.BasicMessageResponse;
-import com.example.real_time_messaging_system.dto.MessageCursor;
-import com.example.real_time_messaging_system.dto.MessageRequest;
-import com.example.real_time_messaging_system.dto.MessageResponse;
+import com.example.real_time_messaging_system.dto.*;
 import com.example.real_time_messaging_system.entity.Chat;
 import com.example.real_time_messaging_system.entity.Message;
 import com.example.real_time_messaging_system.entity.User;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import com.example.real_time_messaging_system.service.MessageService;
+import com.example.real_time_messaging_system.websocket.PresenceService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +31,7 @@ public class MessageController {
     private final MessageService messageService;
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final UserRepository userRepository;
+    private final PresenceService presenceService;
 
     @PostMapping("/send")
     public MessageResponse sendMessage(Authentication authentication, @RequestBody MessageRequest messageRequest){
@@ -74,6 +73,10 @@ public class MessageController {
         MessageResponse messageResponse = messageService.saveMessageFromSocket(email,messageRequest);
         simpMessagingTemplate.convertAndSend("/topic/chat/" + messageResponse.chatId(),messageResponse);
         simpMessagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/chats", messageResponse);
+        if (presenceService.isUserOnline(receiver.getEmail())){
+            messageService.markMessageAsDelivered(messageResponse.id());
+            simpMessagingTemplate.convertAndSendToUser(email, "/queue/status", new MessageStatusUpdate(messageResponse.id(),"DELIVERED"));
+        }
         simpMessagingTemplate.convertAndSendToUser(email, "/queue/chats", messageResponse);
     }
 

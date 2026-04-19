@@ -38,7 +38,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
                 try {
                     String email = jwtUtility.getUsernameFromToken(token);
-                    log.info("🔌 WebSocket CONNECT attempt by: {}", email);
+
 
                     UserDetails user = customUserDetailsService.loadUserByUsername(email);
                     UsernamePasswordAuthenticationToken authentication =
@@ -47,7 +47,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                     accessor.setUser(authentication);
                     accessor.getSessionAttributes().put("user", authentication);
                     log.info("✅ WebSocket authenticated for user: {}", email);
-                    log.info("✅ WebSocket authenticated for user: {}", accessor.getUser());
+
 
                 } catch (Exception e) {
                     log.error(" WebSocket auth failed: {}", e.getMessage());

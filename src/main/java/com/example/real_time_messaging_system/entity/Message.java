@@ -36,5 +36,8 @@ public class Message {
     @JsonIgnore
     private Chat chat;
 
+    @Enumerated(EnumType.STRING)
+    private MessageStatus messageStatus;
+
     private LocalDateTime createdAt;
 }

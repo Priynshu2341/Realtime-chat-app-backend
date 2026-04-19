@@ -1,9 +1,11 @@
 package com.example.real_time_messaging_system.repository;
 
 import com.example.real_time_messaging_system.entity.Message;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface MessageRepository extends JpaRepository<Message,Long> {
@@ -45,4 +48,47 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
            @Param("lastReadAt") LocalDateTime lastReadAt,
            @Param("chatId") Long chatId,
            @Param("userId") Long userId);
+
+
+   @Modifying
+   @Transactional
+   @Query("""
+            UPDATE Message m
+            SET m.messageStatus = 'DELIVERED'
+            WHERE m.sender.userId != :userId
+            AND m.messageStatus = 'SENT'
+            OR m.messageStatus = null
+            AND m.chat.id IN (
+                     SELECT cu.chat.id FROM ChatUser cu
+                     WHERE cu.user.userId = :userId
+                     )
+         """)
+   void markAllSentToDelivered(@Param("userId") Long userId);
+
+
+   @Query("""
+         SELECT m.id FROM Message m
+         Where m.sender.userId != :userId
+         AND m.messageStatus = 'SENT'
+         AND m.chat.id IN (
+         SELECT cu.chat.id FROM ChatUser cu
+         WHERE cu.user.userId = :userId
+         )
+""")
+   Set<Long> findAllSentMessageIdForUser(@Param("userId") Long userId);
+
+
+
+   @Query("""
+            SELECT DISTINCT m.sender.userId FROM Message m
+            WHERE m.sender.userId != :userId
+            AND m.messageStatus = 'SENT'
+            OR m.messageStatus = null
+            AND m.chat.id IN (
+                        SELECT cu.chat.id FROM ChatUser cu
+                        WHERE cu.user.userId = :userId
+                        )
+  
+            """)
+   Set<Long> findAllUserIdForSentMessages(@Param("userId") Long userId);
 }
