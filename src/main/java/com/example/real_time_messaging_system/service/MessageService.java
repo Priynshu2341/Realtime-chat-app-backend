@@ -9,6 +9,7 @@ import com.example.real_time_messaging_system.repository.ChatRepository;
 import com.example.real_time_messaging_system.repository.ChatUserRepository;
 import com.example.real_time_messaging_system.repository.MessageRepository;
 import com.example.real_time_messaging_system.repository.UserRepository;
+import com.example.real_time_messaging_system.websocket.PresenceService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -40,7 +41,7 @@ public class MessageService {
     private final ChatService chatService;
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
-    private final ChatUserRepository  chatUserRepository;
+    private final ChatSessionService chatSessionService;
     private final  SimpMessagingTemplate simpMessagingTemplate;
 
      public MessageResponse saveMessages(@Valid MessageRequest messageRequest, Authentication authentication){
@@ -70,7 +71,8 @@ public class MessageService {
                  sender.getUserId(),
                  sender.getEmail(),
                  chat.getId(),
-                 message.getCreatedAt()
+                 message.getCreatedAt(),
+                 message.getMessageStatus()
          );
 
 
@@ -115,16 +117,29 @@ public class MessageService {
 
 
 
-    public MessageResponse saveMessageFromSocket(String email, MessageRequest messageRequest){
+    public MessageResponse saveMessageFromSocket(String email, MessageRequest messageRequest,boolean isOnline){
          var sender = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid Sender Id"));
          var receiver = userRepository.findById(messageRequest.receiverId()).orElseThrow(()-> new EntityNotFoundException("Invalid Receiver Id"));
          var chat = chatService.findOrCreateChat(sender,receiver);
+
+         Long activeChat = chatSessionService.getActiveChats(receiver.getUserId());
+
+         MessageStatus messageStatus;
+         boolean isChatSame = activeChat != null && activeChat.equals(chat.getId());
+
+         if (isOnline && isChatSame) {
+             messageStatus = MessageStatus.READ;
+         }else if (isOnline) {
+             messageStatus = MessageStatus.DELIVERED;
+         }else {
+             messageStatus = MessageStatus.SENT;
+         }
 
          var message = Message.builder()
                  .content(messageRequest.content())
                  .sender(sender)
                  .chat(chat)
-                 .messageStatus(MessageStatus.SENT)
+                 .messageStatus(messageStatus)
                  .createdAt(LocalDateTime.now())
                  .build();
 
@@ -133,6 +148,10 @@ public class MessageService {
          chat.setLastMessageAt(message.getCreatedAt());
          chatRepository.save(chat);
 
+         if (isOnline && isChatSame) {
+             messageRepository.markAllDeliveredToSeen(receiver.getUserId(),chat.getId());
+         }
+
 
          return new MessageResponse(
                  message.getId(),
@@ -140,7 +159,8 @@ public class MessageService {
                  sender.getUserId(),
                  sender.getEmail(),
                  chat.getId(),
-                 message.getCreatedAt()
+                 message.getCreatedAt(),
+                 message.getMessageStatus()
 
          );
     }
@@ -153,19 +173,34 @@ public class MessageService {
          }
 
     }
+
+
     @Transactional
     public void handleUserCameOnline(String email){
         var receiver =  userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid User Id"));
         Set<Long> userIds = messageRepository.findAllUserIdForSentMessages(receiver.getUserId());
-        log.info("user connected: {}", userIds);
         if (userIds.isEmpty()) return;
         var messagesIds = messageRepository.findAllSentMessageIdForUser(receiver.getUserId());
-        log.info("user connected: {}", messagesIds);
         messageRepository.markAllSentToDelivered(receiver.getUserId());
         for (Long userId : userIds) {
             var currentUser = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found"));
             simpMessagingTemplate.convertAndSendToUser(currentUser.getEmail(), "/queue/refresh", messagesIds);
         }
+    }
+
+
+    @Transactional
+    public void markAsSeen(Long chatId,Long userId){
+         Set<Long> messagesIds = messageRepository.findAllMessageIdDeliveredInChat(userId,chatId);
+         Set<Long> userIds = messageRepository.getSenderIdInMsg(userId, chatId);
+         messageRepository.markAllDeliveredToSeen(userId, chatId);
+
+         for (Long ids : userIds) {
+             var sender = userRepository.findById(ids).orElseThrow(()-> new EntityNotFoundException("Sender not found"));
+             simpMessagingTemplate.convertAndSendToUser(sender.getEmail(), "/queue/seen", messagesIds);
+
+         }
+
     }
 
 

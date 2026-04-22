@@ -57,7 +57,6 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
             SET m.messageStatus = 'DELIVERED'
             WHERE m.sender.userId != :userId
             AND m.messageStatus = 'SENT'
-            OR m.messageStatus = null
             AND m.chat.id IN (
                      SELECT cu.chat.id FROM ChatUser cu
                      WHERE cu.user.userId = :userId
@@ -91,4 +90,35 @@ public interface MessageRepository extends JpaRepository<Message,Long> {
   
             """)
    Set<Long> findAllUserIdForSentMessages(@Param("userId") Long userId);
+
+
+   @Query("""
+            SELECT DISTINCT m.id FROM Message m
+            WHERE m.sender.userId != :userId
+            AND m.messageStatus = 'DELIVERED'
+            AND m.chat.id = :chatId
+            """)
+   Set<Long> findAllMessageIdDeliveredInChat(@Param("userId") Long userId, @Param("chatId") Long chatId);
+
+   @Modifying
+   @Transactional
+   @Query("""
+            UPDATE Message m
+            SET m.messageStatus = 'READ'
+            WHERE m.messageStatus = 'DELIVERED'
+            AND m.chat.id = :chatId
+            AND m.sender.userId != :userId
+            """)
+   void markAllDeliveredToSeen(@Param("userId") Long userId,@Param("chatId") Long chatId);
+
+   @Query("""
+            SELECT DISTINCT m.sender.userId
+            FROM Message m
+            WHERE m.chat.id = :chatId
+            AND m.sender.userId != :userId
+            AND m.messageStatus = 'DELIVERED'
+            """)
+   Set<Long> getSenderIdInMsg(@Param("userId")Long userId,@Param("chatId")Long chatId);
+
+
 }

@@ -1,5 +1,7 @@
 package com.example.real_time_messaging_system.dto;
 
+import com.example.real_time_messaging_system.entity.MessageStatus;
+
 import java.time.LocalDateTime;
 
 public record MessageResponse(
@@ -8,7 +10,8 @@ public record MessageResponse(
         Long senderId,
         String email,
         Long chatId,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        MessageStatus messageStatus
 
 ) {
 }

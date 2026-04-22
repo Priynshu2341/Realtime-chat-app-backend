@@ -26,9 +26,7 @@ public class PresenceService {
 
     private final SimpUserRegistry simpUserRegistry;
     private final MessageService messageService;
-    private final SimpMessagingTemplate simpMessagingTemplate;
-    private final MessageRepository messageRepository;
-    private final UserRepository userRepository;
+
 
     public boolean isUserOnline(String email) {
        return simpUserRegistry.getUsers().stream().anyMatch(u -> u.getName().equals(email));

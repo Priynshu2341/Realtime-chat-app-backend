@@ -10,6 +10,7 @@ import com.example.real_time_messaging_system.websocket.PresenceService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -22,6 +23,7 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/message")
 @RequiredArgsConstructor
@@ -70,7 +72,11 @@ public class MessageController {
         String email = principal.getName();
         Long receiverId = messageRequest.receiverId();
         User receiver = userRepository.findById(receiverId).orElseThrow(()->new EntityNotFoundException("Receiver not found"));
-        MessageResponse messageResponse = messageService.saveMessageFromSocket(email,messageRequest);
+        boolean isOnline = presenceService.isUserOnline(receiver.getEmail());
+
+
+        MessageResponse messageResponse = messageService.saveMessageFromSocket(email,messageRequest,isOnline);
+        log.info("messageResponse:{}",messageResponse);
         simpMessagingTemplate.convertAndSend("/topic/chat/" + messageResponse.chatId(),messageResponse);
         simpMessagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/chats", messageResponse);
         if (presenceService.isUserOnline(receiver.getEmail())){
