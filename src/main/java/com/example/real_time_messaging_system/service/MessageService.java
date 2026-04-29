@@ -42,7 +42,7 @@ public class MessageService {
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
     private final ChatSessionService chatSessionService;
-    private final  SimpMessagingTemplate simpMessagingTemplate;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
      public MessageResponse saveMessages(@Valid MessageRequest messageRequest, Authentication authentication){
         String email = authentication.getName();
@@ -186,6 +186,7 @@ public class MessageService {
             var currentUser = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found"));
             simpMessagingTemplate.convertAndSendToUser(currentUser.getEmail(), "/queue/refresh", messagesIds);
         }
+
     }
 
 

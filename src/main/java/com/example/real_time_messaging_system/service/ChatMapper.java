@@ -13,7 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatMapper {
 
-    public ChatResponse toChatResponse(Chat chat,User currentUser,String lastMessage,long unReadCount){
+    public ChatResponse toChatResponse(Chat chat,User currentUser,String lastMessage,long unReadCount,boolean isUserOnline){
         ChatUser otherUser = chat.getUsers().stream().filter(
                 u -> !u.getUser().getUserId().equals(currentUser.getUserId())).findFirst().orElseThrow();
 
@@ -23,7 +23,9 @@ public class ChatMapper {
                 otherUser.getUser().getEmail(),
                 lastMessage,
                 chat.getChatKey(),
-                unReadCount
+                unReadCount,
+                isUserOnline
+
 
 
         );

@@ -76,15 +76,22 @@ public class MessageController {
 
 
         MessageResponse messageResponse = messageService.saveMessageFromSocket(email,messageRequest,isOnline);
-        log.info("messageResponse:{}",messageResponse);
+        //send to chat
         simpMessagingTemplate.convertAndSend("/topic/chat/" + messageResponse.chatId(),messageResponse);
+        //send to receiver message
         simpMessagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/chats", messageResponse);
+        //send to receiver message status
         if (presenceService.isUserOnline(receiver.getEmail())){
             messageService.markMessageAsDelivered(messageResponse.id());
             simpMessagingTemplate.convertAndSendToUser(email, "/queue/status", new MessageStatusUpdate(messageResponse.id(),"DELIVERED"));
         }
+        //send to sender message
         simpMessagingTemplate.convertAndSendToUser(email, "/queue/chats", messageResponse);
+
+
     }
+
+
 
 
 }

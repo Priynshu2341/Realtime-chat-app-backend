@@ -8,6 +8,7 @@ public record ChatResponse(
         String otherUserName,
         String lastMessage,
         String chatKey,
-        long unRead
+        long unread,
+        boolean isOtherUserOnline
 ) {
 }
