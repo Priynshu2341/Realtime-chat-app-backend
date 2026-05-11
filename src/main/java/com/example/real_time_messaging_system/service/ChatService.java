@@ -63,8 +63,9 @@ public class ChatService {
 
         return chatUsers.stream().map(chatUser -> {
             Chat chat = chatUser.getChat();
+            User otherUser = chat.getUsers().stream().map(ChatUser::getUser).filter(user -> !user.getUserId().equals(currentUser.getUserId())).findFirst().orElseThrow(()-> new EntityNotFoundException("User not found"));
             long unReadCount = messageRepository.countUnreadMessages(chatUser.getLastReadAt(),chat.getId(), currentUser.getUserId());
-            boolean isUserOnline = presenceService.isUserOnline(chatUser.getUser().getEmail());
+            boolean isUserOnline = presenceService.isUserOnline(otherUser.getEmail());
             var lastMessage = chat.getLastMessage() != null ? chat.getLastMessage() : "";
 
             return chatMapper.toChatResponse(chat,currentUser,lastMessage,unReadCount,isUserOnline);

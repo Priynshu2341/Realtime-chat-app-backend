@@ -1,10 +1,13 @@
 package com.example.real_time_messaging_system.websocket;
 
 import com.example.real_time_messaging_system.dto.PresenceUpdate;
+import com.example.real_time_messaging_system.dto.UserOnlineEvent;
 import com.example.real_time_messaging_system.entity.OnlineStatus;
 import com.example.real_time_messaging_system.service.MessageService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -23,8 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PresenceService {
 
 
-    private final MessageService messageService;
+
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     private final Map<String, Integer> connections = new ConcurrentHashMap<>();
@@ -42,6 +46,13 @@ public class PresenceService {
         return connections.containsKey(email);
     }
 
+    @PostConstruct
+    public void init(){
+        log.info("init presence service: {}",connections.size());
+        connections.clear();
+    }
+
+
     @EventListener
     public void handleSessionConnected(SessionConnectedEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
@@ -52,8 +63,8 @@ public class PresenceService {
         userConnected(email);
         if (wasOffline) {
             simpMessagingTemplate.convertAndSend("/topic/presence",new PresenceUpdate(email, OnlineStatus.ONLINE));
+            eventPublisher.publishEvent(new UserOnlineEvent(email));
         }
-        messageService.handleUserCameOnline(email);
 
 
     }
