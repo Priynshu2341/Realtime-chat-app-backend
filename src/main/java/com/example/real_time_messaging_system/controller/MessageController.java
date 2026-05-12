@@ -1,18 +1,16 @@
 package com.example.real_time_messaging_system.controller;
 
 import com.example.real_time_messaging_system.dto.*;
-import com.example.real_time_messaging_system.entity.Chat;
-import com.example.real_time_messaging_system.entity.Message;
+import com.example.real_time_messaging_system.dto.request.MessageRequest;
+import com.example.real_time_messaging_system.dto.response.MessageResponse;
 import com.example.real_time_messaging_system.entity.User;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import com.example.real_time_messaging_system.service.MessageService;
 import com.example.real_time_messaging_system.websocket.PresenceService;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @RestController

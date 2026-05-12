@@ -1,7 +1,6 @@
-package com.example.real_time_messaging_system.dto;
+package com.example.real_time_messaging_system.dto.response;
 
 import com.example.real_time_messaging_system.entity.MessageStatus;
-import com.example.real_time_messaging_system.entity.User;
 
 import java.time.LocalDateTime;
 

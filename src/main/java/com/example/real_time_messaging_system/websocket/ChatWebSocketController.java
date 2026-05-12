@@ -1,6 +1,6 @@
 package com.example.real_time_messaging_system.websocket;
 
-import com.example.real_time_messaging_system.dto.ChatOpenRequest;
+import com.example.real_time_messaging_system.dto.request.ChatOpenRequest;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import com.example.real_time_messaging_system.service.ChatService;
 import com.example.real_time_messaging_system.service.ChatSessionService;

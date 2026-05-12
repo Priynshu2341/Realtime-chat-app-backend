@@ -1,6 +1,4 @@
-package com.example.real_time_messaging_system.dto;
-
-import java.util.List;
+package com.example.real_time_messaging_system.dto.response;
 
 public record ChatResponse(
         Long chatId,

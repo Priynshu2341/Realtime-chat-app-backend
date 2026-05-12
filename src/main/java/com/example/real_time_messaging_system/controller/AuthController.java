@@ -1,9 +1,9 @@
 package com.example.real_time_messaging_system.controller;
 
 
-import com.example.real_time_messaging_system.dto.LoginRequest;
-import com.example.real_time_messaging_system.dto.LoginResponse;
-import com.example.real_time_messaging_system.dto.RegisterRequest;
+import com.example.real_time_messaging_system.dto.request.LoginRequest;
+import com.example.real_time_messaging_system.dto.response.LoginResponse;
+import com.example.real_time_messaging_system.dto.request.RegisterRequest;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import com.example.real_time_messaging_system.security.CustomUserDetailsService;
 import com.example.real_time_messaging_system.security.JwtUtility;

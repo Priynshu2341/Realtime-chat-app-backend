@@ -1,6 +1,6 @@
 package com.example.real_time_messaging_system.service;
 
-import com.example.real_time_messaging_system.dto.ChatResponse;
+import com.example.real_time_messaging_system.dto.response.ChatResponse;
 import com.example.real_time_messaging_system.entity.*;
 import com.example.real_time_messaging_system.repository.ChatRepository;
 import com.example.real_time_messaging_system.repository.ChatUserRepository;

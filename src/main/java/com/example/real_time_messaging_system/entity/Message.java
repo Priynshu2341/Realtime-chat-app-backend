@@ -29,6 +29,7 @@ public class Message {
     private User sender;
 
     @JoinColumn(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @ManyToOne(optional = false,fetch = FetchType.LAZY)
@@ -38,6 +39,11 @@ public class Message {
 
     @Enumerated(EnumType.STRING)
     private MessageStatus messageStatus;
+
+    @Enumerated(EnumType.STRING)
+    private MessageType messageType;
+
+    private String mediaUrl;
 
     private LocalDateTime createdAt;
 }

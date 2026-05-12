@@ -1,7 +1,6 @@
 package com.example.real_time_messaging_system.service;
 
-import com.example.real_time_messaging_system.dto.BasicMessageResponse;
-import com.example.real_time_messaging_system.dto.MessageResponse;
+import com.example.real_time_messaging_system.dto.response.BasicMessageResponse;
 import com.example.real_time_messaging_system.entity.Message;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

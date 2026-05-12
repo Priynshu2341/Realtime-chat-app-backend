@@ -1,25 +1,24 @@
 package com.example.real_time_messaging_system.controller;
 
-import com.example.real_time_messaging_system.dto.TypingIndicatorRequest;
-import com.example.real_time_messaging_system.dto.TypingIndicatorResponse;
-import com.example.real_time_messaging_system.entity.ChatUser;
+import com.example.real_time_messaging_system.dto.request.TypingIndicatorRequest;
+import com.example.real_time_messaging_system.dto.response.TypingIndicatorResponse;
 import com.example.real_time_messaging_system.entity.User;
 import com.example.real_time_messaging_system.repository.ChatRepository;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.stereotype.Controller;
+
 
 import java.security.Principal;
 
-@RequestMapping
 @RequiredArgsConstructor
+@Controller
 public class TypingController {
 
     private final UserRepository userRepository;
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
     private final ChatRepository chatRepository;
 
     @MessageMapping("/chat.typing")

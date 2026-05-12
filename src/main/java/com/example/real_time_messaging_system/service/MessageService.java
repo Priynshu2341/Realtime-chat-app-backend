@@ -1,24 +1,23 @@
 package com.example.real_time_messaging_system.service;
 
 import com.example.real_time_messaging_system.dto.*;
+import com.example.real_time_messaging_system.dto.request.MessageRequest;
+import com.example.real_time_messaging_system.dto.response.BasicMessageResponse;
+import com.example.real_time_messaging_system.dto.response.MessageResponse;
+import com.example.real_time_messaging_system.dto.response.PaginatedResponse;
 import com.example.real_time_messaging_system.entity.Chat;
-import com.example.real_time_messaging_system.entity.ChatUser;
 import com.example.real_time_messaging_system.entity.Message;
 import com.example.real_time_messaging_system.entity.MessageStatus;
+import com.example.real_time_messaging_system.entity.MessageType;
 import com.example.real_time_messaging_system.repository.ChatRepository;
-import com.example.real_time_messaging_system.repository.ChatUserRepository;
 import com.example.real_time_messaging_system.repository.MessageRepository;
 import com.example.real_time_messaging_system.repository.UserRepository;
-import com.example.real_time_messaging_system.websocket.PresenceService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.query.Param;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -42,14 +40,18 @@ public class MessageService {
     private final ChatRepository chatRepository;
     private final MessageMapper messageMapper;
     private final ChatSessionService chatSessionService;
+    private final FileStorageService fileStorageService;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
      public MessageResponse saveMessages(@Valid MessageRequest messageRequest, Authentication authentication){
+         fileStorageService.validateMessage(messageRequest);
         String email = authentication.getName();
         var sender = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid Sender Id"));
         var receiver = userRepository.findById(messageRequest.receiverId()).orElseThrow(()-> new EntityNotFoundException("Invalid Receiver Id"));
 
         Chat chat = chatService.findOrCreateChat(sender,receiver);
+
+
 
         var message = Message
                 .builder()
@@ -58,10 +60,12 @@ public class MessageService {
                 .chat(chat)
                 .messageStatus(MessageStatus.SENT)
                 .createdAt(LocalDateTime.now())
+                .messageType(messageRequest.messageType())
+                .mediaUrl(messageRequest.mediaUrl())
                 .build();
 
         messageRepository.save(message);
-        chat.setLastMessage(message.getContent());
+        if ( message.getMessageType() == MessageType.IMAGE ) { chat.setLastMessage("📷 Image"); } else { chat.setLastMessage( message.getContent() ); }
         chat.setLastMessageAt(message.getCreatedAt());
         chatRepository.save(chat);
 
@@ -72,7 +76,9 @@ public class MessageService {
                  sender.getEmail(),
                  chat.getId(),
                  message.getCreatedAt(),
-                 message.getMessageStatus()
+                 message.getMessageStatus(),
+                 message.getMessageType(),
+                 message.getMediaUrl()
          );
 
 
@@ -141,6 +147,8 @@ public class MessageService {
                  .chat(chat)
                  .messageStatus(messageStatus)
                  .createdAt(LocalDateTime.now())
+                 .mediaUrl(messageRequest.mediaUrl())
+                 .messageType(messageRequest.messageType())
                  .build();
 
          messageRepository.save(message);
@@ -160,10 +168,13 @@ public class MessageService {
                  sender.getEmail(),
                  chat.getId(),
                  message.getCreatedAt(),
-                 message.getMessageStatus()
+                 message.getMessageStatus(),
+                 messageRequest.messageType(),
+                 messageRequest.mediaUrl()
 
          );
     }
+
 
     public void markMessageAsDelivered(Long messageId){
          var message = messageRepository.findById(messageId).orElseThrow(()-> new EntityNotFoundException("Message not found"));

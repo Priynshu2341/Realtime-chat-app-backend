@@ -1,13 +1,11 @@
 package com.example.real_time_messaging_system.service;
 
-import com.example.real_time_messaging_system.dto.ChatResponse;
+import com.example.real_time_messaging_system.dto.response.ChatResponse;
 import com.example.real_time_messaging_system.entity.Chat;
 import com.example.real_time_messaging_system.entity.ChatUser;
 import com.example.real_time_messaging_system.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

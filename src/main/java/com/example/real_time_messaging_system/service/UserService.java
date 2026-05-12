@@ -1,6 +1,6 @@
 package com.example.real_time_messaging_system.service;
 
-import com.example.real_time_messaging_system.dto.RegisterRequest;
+import com.example.real_time_messaging_system.dto.request.RegisterRequest;
 import com.example.real_time_messaging_system.entity.User;
 import com.example.real_time_messaging_system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
