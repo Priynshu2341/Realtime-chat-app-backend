@@ -16,7 +16,9 @@ public class MessageMapper {
                 message.getContent(),
                 message.getSender().getUserId(),
                 message.getCreatedAt(),
-                message.getMessageStatus()
+                message.getMessageStatus(),
+                message.getMessageType(),
+                message.getMediaUrl()
         );
     }
 }

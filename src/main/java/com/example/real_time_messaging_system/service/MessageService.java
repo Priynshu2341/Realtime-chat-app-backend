@@ -124,7 +124,8 @@ public class MessageService {
 
 
     public MessageResponse saveMessageFromSocket(String email, MessageRequest messageRequest,boolean isOnline){
-         var sender = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid Sender Id"));
+        fileStorageService.validateMessage(messageRequest);
+        var sender = userRepository.findByEmail(email).orElseThrow(()-> new EntityNotFoundException("Invalid Sender Id"));
          var receiver = userRepository.findById(messageRequest.receiverId()).orElseThrow(()-> new EntityNotFoundException("Invalid Receiver Id"));
          var chat = chatService.findOrCreateChat(sender,receiver);
 
@@ -152,7 +153,7 @@ public class MessageService {
                  .build();
 
          messageRepository.save(message);
-         chat.setLastMessage(message.getContent());
+         if ( message.getMessageType() == MessageType.IMAGE ) { chat.setLastMessage("📷 Image"); } else { chat.setLastMessage( message.getContent() ); }
          chat.setLastMessageAt(message.getCreatedAt());
          chatRepository.save(chat);
 
@@ -169,8 +170,8 @@ public class MessageService {
                  chat.getId(),
                  message.getCreatedAt(),
                  message.getMessageStatus(),
-                 messageRequest.messageType(),
-                 messageRequest.mediaUrl()
+                 message.getMessageType(),
+                 message.getMediaUrl()
 
          );
     }
