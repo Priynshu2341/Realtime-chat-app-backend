@@ -1,17 +1,16 @@
 package com.example.real_time_messaging_system.websocket;
 
-import com.example.real_time_messaging_system.dto.PresenceUpdate;
+import com.example.real_time_messaging_system.dto.PresenceEvent;
 import com.example.real_time_messaging_system.dto.UserOnlineEvent;
 import com.example.real_time_messaging_system.entity.OnlineStatus;
-import com.example.real_time_messaging_system.service.MessageService;
+import com.example.real_time_messaging_system.redis.PresencePublisher;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
@@ -27,30 +26,30 @@ public class PresenceService {
 
 
 
-    private final SimpMessagingTemplate simpMessagingTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final PresencePublisher presencePublisher;
+    private final StringRedisTemplate stringRedisTemplate;
 
 
-    private final Map<String, Integer> connections = new ConcurrentHashMap<>();
-
-    public void userConnected(String email) {
-        connections.merge(email,1, Integer::sum);
+    public String getPresenceKey(String email){
+        return "presence:" + email;
     }
-
-    public void userDisconnected(String email) {
-        connections.computeIfPresent(email, (k,v) -> v > 1 ? v - 1 : null );
-    }
-
 
     public boolean isUserOnline(String email) {
-        return connections.containsKey(email);
+        String value = stringRedisTemplate
+                .opsForValue()
+                .get(getPresenceKey(email));
+
+        if (value == null) {
+            return false;
+        }
+        try {
+            return Integer.parseInt(value) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
-    @PostConstruct
-    public void init(){
-        log.info("init presence service: {}",connections.size());
-        connections.clear();
-    }
 
 
     @EventListener
@@ -59,10 +58,11 @@ public class PresenceService {
         Principal user = accessor.getUser();
         if (user == null) return;
         String email = user.getName();
-        boolean wasOffline =  !isUserOnline(email);
-        userConnected(email);
+        long connections = stringRedisTemplate.opsForValue().increment(getPresenceKey(email));
+        boolean wasOffline =  connections == 1;
+
         if (wasOffline) {
-            simpMessagingTemplate.convertAndSend("/topic/presence",new PresenceUpdate(email, OnlineStatus.ONLINE));
+            presencePublisher.publish(new PresenceEvent(email,OnlineStatus.ONLINE));
             eventPublisher.publishEvent(new UserOnlineEvent(email));
         }
 
@@ -73,15 +73,16 @@ public class PresenceService {
     public void handleSessionDisconnect(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         Principal user = accessor.getUser();
-
         if (user == null) return;
-
         String email = user.getName();
+        long connections = stringRedisTemplate.opsForValue().decrement(getPresenceKey(email));
+        boolean isOffline = connections <= 0;
 
-        log.info("user disconnected: {}", email);
-        userDisconnected(email);
-        if (!isUserOnline(email)){
-            simpMessagingTemplate.convertAndSend("/topic/presence",new PresenceUpdate(email, OnlineStatus.OFFLINE));
+        if (isOffline) {
+            stringRedisTemplate.delete(getPresenceKey(email));
+            presencePublisher.publish(new PresenceEvent(email,OnlineStatus.OFFLINE));
         }
+
+
     }
 }
