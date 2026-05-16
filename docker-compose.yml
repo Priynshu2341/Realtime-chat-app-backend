@@ -1,48 +1,107 @@
-  version: "3.9"
+version: "3.9"
 
-  services:
+services:
 
-    postgres:
-      image: postgres:16
-      container_name: postgres_db
-      restart: unless-stopped
-      environment:
-        POSTGRES_USER: admin
-        POSTGRES_PASSWORD: admin123
-        POSTGRES_DB: mydb
-      ports:
-        - "5432:5432"
-      volumes:
-        - postgres_data:/var/lib/postgresql/data
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    restart: unless-stopped
 
-    pgadmin:
-      image: dpage/pgadmin4:7
-      container_name: pgadmin_ui
-      restart: unless-stopped
-      environment:
-        PGADMIN_DEFAULT_EMAIL: admin@example.com
-        PGADMIN_DEFAULT_PASSWORD: admin123
-      ports:
-        - "5050:80"
-      depends_on:
-        - postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: mydb
 
-    redis:
-      image: redis:7-alpine
-      container_name: redis_chat
-      restart: unless-stopped
-      ports:
-        - "6379:6379"
-      command:
-        [
-          "redis-server",
-          "--appendonly",
-          "yes"
-        ]
-      volumes:
-        - redis_data:/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
-  volumes:
-    postgres_data:
-    redis_data:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+    networks:
+      - chat_network
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_chat
+    restart: unless-stopped
+
+    command: >
+      redis-server
+      --appendonly yes
+
+    volumes:
+      - redis_data:/data
+
+
+    ports:
+     - "6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - chat_network
+
+
+  pgadmin:
+    image: dpage/pgadmin4:7
+    container_name: pgadmin_ui
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+
+    ports:
+      - "5050:80"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - chat_network
+
+  backend:
+    build: .
+    container_name: chat_backend
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+    ports:
+      - "8080:8080"
+
+    networks:
+      - chat_network
+
+    volumes:
+      - uploads_data:/app/uploads
+
+
+
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+
+
+networks:
+  chat_network:
+    driver: bridge
