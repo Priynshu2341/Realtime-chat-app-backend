@@ -72,26 +72,26 @@ services:
     networks:
       - chat_network
 
-  backend:
-    build: .
-    container_name: chat_backend
-    restart: unless-stopped
-
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-      redis:
-        condition: service_healthy
-
-    ports:
-      - "8080:8080"
-
-    networks:
-      - chat_network
-
-    volumes:
-      - uploads_data:/app/uploads
+#  backend:
+#    build: .
+#    container_name: chat_backend
+#    restart: unless-stopped
+#
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#
+#      redis:
+#        condition: service_healthy
+#
+#    ports:
+#      - "8080:8080"
+#
+#    networks:
+#      - chat_network
+#
+#    volumes:
+#      - uploads_data:/app/uploads
 
 
 
@@ -99,7 +99,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  uploads_data:
+#  uploads_data:
 
 
 networks:

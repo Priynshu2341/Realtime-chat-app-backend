@@ -16,7 +16,6 @@ public class PresenceHandler {
 
     @EventListener
     public void handleUserCameOnline(UserOnlineEvent event){
-
         messageService.handleUserCameOnline(event.email());
     }
 }
