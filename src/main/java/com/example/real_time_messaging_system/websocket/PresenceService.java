@@ -11,12 +11,16 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -25,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PresenceService {
 
 
+    public static final Duration PRESENCE_TTL = Duration.ofSeconds(30);
 
     private final ApplicationEventPublisher eventPublisher;
     private final PresencePublisher presencePublisher;
@@ -36,18 +41,9 @@ public class PresenceService {
     }
 
     public boolean isUserOnline(String email) {
-        String value = stringRedisTemplate
-                .opsForValue()
-                .get(getPresenceKey(email));
-
-        if (value == null) {
-            return false;
-        }
-        try {
-            return Integer.parseInt(value) > 0;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+       return Boolean.TRUE.equals(
+               stringRedisTemplate.hasKey(getPresenceKey(email))
+       );
     }
 
 
@@ -58,8 +54,11 @@ public class PresenceService {
         Principal user = accessor.getUser();
         if (user == null) return;
         String email = user.getName();
-        long connections = stringRedisTemplate.opsForValue().increment(getPresenceKey(email));
-        boolean wasOffline =  connections == 1;
+
+        Long connections = stringRedisTemplate.opsForValue().increment(getPresenceKey(email));
+        log.info("Connected to " + email + " with " + connections + " connections");
+        stringRedisTemplate.expire(getPresenceKey(email),PRESENCE_TTL);
+        boolean wasOffline = connections != null && connections == 1;
 
         if (wasOffline) {
             presencePublisher.publish(new PresenceEvent(email,OnlineStatus.ONLINE));
@@ -75,8 +74,8 @@ public class PresenceService {
         Principal user = accessor.getUser();
         if (user == null) return;
         String email = user.getName();
-        long connections = stringRedisTemplate.opsForValue().decrement(getPresenceKey(email));
-        boolean isOffline = connections <= 0;
+        Long connections = stringRedisTemplate.opsForValue().decrement(getPresenceKey(email));
+        boolean isOffline = connections == null || connections <= 0;
 
         if (isOffline) {
             stringRedisTemplate.delete(getPresenceKey(email));
@@ -85,4 +84,14 @@ public class PresenceService {
 
 
     }
+
+    @Scheduled(fixedRate = 15000)
+    public void refreshPresenceTTL(){
+        Set<String> keys = stringRedisTemplate.keys("presence:*");
+        if (keys == null ) return;
+        for (String key : keys) {
+            stringRedisTemplate.expire(key,PRESENCE_TTL);
+        }
+    }
+
 }
