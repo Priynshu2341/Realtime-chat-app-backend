@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers("/api/v1/auth/**").permitAll()
-                                .requestMatchers("/ws/**","/uploads/**","/ws").permitAll()
+                                .requestMatchers("/ws/**","/uploads/**","/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManagement ->
